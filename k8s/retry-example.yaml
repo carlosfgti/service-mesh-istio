@@ -1,0 +1,38 @@
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: product-retry
+  namespace: istio-demo
+spec:
+  hosts:
+    - product
+  http:
+    - route:
+        - destination:
+            host: product
+            port:
+              number: 5000
+      retries:
+        attempts: 3
+        perTryTimeout: 2s
+        retryOn: 5xx,reset,connect-failure,refused-stream
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: frontend-retry
+  namespace: istio-demo
+spec:
+  hosts:
+    - frontend
+  http:
+    - route:
+        - destination:
+            host: frontend
+            port:
+              number: 5000
+      timeout: 10s
+      retries:
+        attempts: 3
+        perTryTimeout: 3s
+        retryOn: 5xx,reset,connect-failure,refused-stream,retriable-4xx

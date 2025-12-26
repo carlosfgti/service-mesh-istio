@@ -113,4 +113,5 @@ make port-forward
 
 - [QUICKSTART.md](docs/QUICKSTART.md) - guia completo do zero até funcionar
 - [SETUP.md](docs/SETUP.md) - detalhes técnicos de todas as configs
+- [retry-policy.md](docs/retry-policy.md) - como configurar e testar retry no Istio
 - [scripts.md](docs/scripts.md) - docs dos scripts auxiliares
