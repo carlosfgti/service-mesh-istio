@@ -28,6 +28,16 @@ spec:
   http:
     - match:
         - uri:
+            prefix: /slow
+      rewrite:
+        uri: /
+      route:
+        - destination:
+            host: slow-service
+            port:
+              number: 5000
+    - match:
+        - uri:
             prefix: /
       route:
         - destination:

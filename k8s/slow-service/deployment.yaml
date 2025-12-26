@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: slow-service
+  namespace: istio-demo
+  labels:
+    app: slow-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: slow-service
+  template:
+    metadata:
+      labels:
+        app: slow-service
+        version: v1
+    spec:
+      containers:
+      - name: slow-service
+        image: slow-service:demo
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 5000
+        env:
+        - name: SLOW_RATE
+          value: "0.5"
+        - name: SLOW_DURATION
+          value: "5"
+        - name: ERROR_RATE
+          value: "0.2"
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "200m"
