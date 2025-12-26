@@ -111,6 +111,6 @@ make port-forward
 
 ## Docs extras
 
-- [QUICKSTART.md](QUICKSTART.md) - guia completo do zero até funcionar
-- [SETUP.md](SETUP.md) - detalhes técnicos de todas as configs
-- [scripts/README.md](scripts/README.md) - docs dos scripts auxiliares
+- [QUICKSTART.md](docs/QUICKSTART.md) - guia completo do zero até funcionar
+- [SETUP.md](docs/SETUP.md) - detalhes técnicos de todas as configs
+- [scripts.md](docs/scripts.md) - docs dos scripts auxiliares

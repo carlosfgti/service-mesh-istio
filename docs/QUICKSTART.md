@@ -25,7 +25,7 @@ Aguarde o cluster estar pronto (~30 segundos).
 ```bash
 make install-istio
 # ou
-./install-istio.sh
+./scripts/install-istio.sh
 ```
 
 Isso instala:
@@ -44,7 +44,7 @@ make kind-load
 ```bash
 make apply
 # ou
-./deploy.sh
+./scripts/deploy.sh
 ```
 
 Aguarde os pods ficarem prontos:

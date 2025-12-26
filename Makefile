@@ -31,16 +31,16 @@ kind-load:
 	@kind load docker-image $(IMAGE_PRODUCT) --name $(CLUSTER_NAME) || true
 
 install-istio:
-	@chmod +x install-istio.sh
-	@./install-istio.sh
+	@chmod +x scripts/install-istio.sh
+	@./scripts/install-istio.sh
 
 install-observability:
 	@chmod +x scripts/install-observability.sh
 	@bash scripts/install-observability.sh
 
 deploy: build-images kind-load
-	@chmod +x deploy.sh
-	@./deploy.sh
+	@chmod +x scripts/deploy.sh
+	@./scripts/deploy.sh
 
 apply:
 	kubectl apply -f k8s/

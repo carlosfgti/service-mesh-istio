@@ -25,13 +25,16 @@ service-mesh-istio/
 │       └── Dockerfile
 ├── scripts/
 │   ├── create-kind.sh            # Cria cluster kind com port mappings
+│   ├── install-istio.sh          # Instala Istio com tracing habilitado
+│   ├── deploy.sh                 # Aplica todos os manifestos k8s
 │   ├── install-observability.sh # Instala Grafana/Prometheus/Jaeger via Helm
 │   ├── setup-observability.sh   # Setup completo automático
 │   ├── port-forward-dashboards.sh # Port-forwards para dashboards
-│   ├── generate-traffic.sh      # Gera tráfego de teste
-│   └── README.md                 # Documentação dos scripts
-├── install-istio.sh              # Instala Istio com tracing habilitado
-├── deploy.sh                     # Aplica todos os manifestos k8s
+│   └── generate-traffic.sh      # Gera tráfego de teste
+├── docs/
+│   ├── QUICKSTART.md             # Guia rápido de setup
+│   ├── SETUP.md                  # Documentação técnica
+│   └── scripts.md                # Documentação dos scripts
 ├── kind-config.yaml              # Configuração do cluster kind
 ├── Makefile                      # Targets úteis para automação
 └── README.md                     # Documentação principal
