@@ -1,150 +1,116 @@
-# Service Mesh Demo com Istio e Observabilidade
+# Service Mesh com Istio
 
-Exemplo mínimo de service mesh usando Istio com observabilidade (Prometheus, Grafana, Jaeger via perfil `demo` do Istio).
+Projeto de estudo sobre service mesh usando Istio. Criei dois microsserviços simples (frontend e product) pra testar tracing distribuído, métricas e toda a stack de observabilidade.
 
-Pré-requisitos
-- Cluster Kubernetes (minikube, kind, ou um cluster remoto)
-- `kubectl` configurado para o cluster
-- `docker` para build de imagens (ou `podman`)
-- `istioctl` para instalar Istio
+## O que tem aqui
 
-Passos rápidos
+Duas aplicações Flask bem básicas:
+- **frontend** - faz request pro product e retorna os dados
+- **product** - devolve uma lista de produtos (hardcoded mesmo, só pra testar)
 
-1. Instalar Istio (perfil demo):
+Elas rodam num cluster kind com Istio, e você pode ver todas as métricas e traces no Grafana, Prometheus e Jaeger.
+
+## Rodando local
+
+Você vai precisar de:
+- Docker Desktop rodando
+- kubectl, kind, istioctl e helm instalados
+- Paciência pra esperar os pods subirem 😅
+
+### Setup rápido
+
+Se quiser fazer tudo de uma vez (recomendo pra primeira vez):
 
 ```bash
-chmod +x install-istio.sh
-./install-istio.sh
+# Cria o cluster kind
+make create-kind
+
+# Instala o Istio já com tracing configurado
+make install-istio
+
+# Builda as imagens e faz deploy
+make build-images
+make kind-load
+make apply
+
+# Instala a stack de observabilidade (Grafana, Prometheus, Jaeger)
+make install-observability
+
+# Aguarda tudo subir (pode levar uns 2-3 min)
+kubectl -n istio-demo get pods -w
+
+# Inicia os port-forwards pros dashboards
+make port-forward
+
+# Gera uns requests pra ter dados nos dashboards
+make generate-traffic
 ```
 
-2. Construir imagens e aplicar manifests:
+### Acessando
 
+Depois que tudo subir:
+
+- **Aplicação**: http://localhost:8080
+- **Grafana**: http://localhost:3000 (user: admin, senha: roda `kubectl -n istio-system get secrets prometheus-grafana -o jsonpath="{.data.admin-password}" | base64 -d`)
+- **Prometheus**: http://localhost:9090
+- **Jaeger**: http://localhost:16686
+
+No Jaeger, procura pelo service `frontend.istio-demo` pra ver os traces das requisições.
+
+## Comandos úteis
+
+```bash
+# Ver o status de tudo
+make status
+
+# Gerar mais tráfego
+make generate-traffic
+
+# Reiniciar as apps (útil quando muda alguma config do Istio)
+make restart-apps
+
+# Ver todos os comandos disponíveis
+make help
+
+# Parar os port-forwards
+bash scripts/port-forward-dashboards.sh --stop
+```
+
+## Como funciona
+
+O frontend chama o product através do service mesh. O Istio injeta um sidecar (Envoy proxy) em cada pod, e esse proxy intercepta todo o tráfego HTTP. Por isso dá pra ver as métricas de latência, taxa de erro, e os traces distribuídos de cada request.
+
+O tracing tá configurado pra capturar 100% das requisições (não é recomendado em produção, mas pra testar é bom). Os proxies mandam os spans pro Jaeger usando o protocolo Zipkin.
+
+## Troubleshooting
+
+**Pods não sobem (ImagePullBackOff)**
 ```bash
 make build-images
-chmod +x deploy.sh
-./deploy.sh
+make kind-load
+kubectl -n istio-demo rollout restart deployment frontend product
 ```
 
-3. Acessar dashboards de observabilidade (após a instalação do Istio):
-
+**Jaeger não mostra traces**
 ```bash
-istioctl dashboard prometheus
-istioctl dashboard grafana
-istioctl dashboard jaeger
+# Verifica se o telemetry tá aplicado
+kubectl get telemetry -A
 
-Observability (script automatizado)
- - Há um script que automatiza a instalação dos addons (Grafana/Prometheus/Jaeger quando necessário), faz port-forward dos serviços e gera tráfego de teste:
+# Reinicia as apps pra pegar a config nova
+make restart-apps
 
+# Gera tráfego novo
+make generate-traffic
+```
+
+**Port-forward não funciona**
 ```bash
-chmod +x scripts/setup-observability.sh
-./scripts/setup-observability.sh
+pkill -f "kubectl.*port-forward"
+make port-forward
 ```
 
- - Para interromper os port-forwards que o script iniciou:
+## Docs extras
 
-```bash
-./scripts/setup-observability.sh --stop
-```
-
-Kind helpers
- - Existe um arquivo de configuração para `kind` e um script para criar o cluster e carregar imagens locais:
-
-```bash
-kind create cluster --config kind-config.yaml --name kind-istio
-# ou via helper
-bash scripts/create-kind.sh
-```
-
-```
-
-Notas para clusters locais
-- Para `kind`, carregue as imagens locais com:
-
-```bash
-# após `make build-images`
-kind load docker-image frontend:demo --name <kind-cluster>
-kind load docker-image product:demo --name <kind-cluster>
-```
-
-Como funciona
-- `frontend` consulta `product` em `/products`.
-- Ambos os deployments são implantados no namespace `istio-demo` com `istio-injection=enabled`.
-- O `Gateway` do Istio expõe o `frontend` via ingress.
-
-Próximos passos
-- Posso ajustar os manifests para `minikube` (NodePort) ou adicionar recursos de telemetria mais avançados (mTLS, DestinationRule). Quer que eu faça isso?
-
-Acessando aplicações e observability
-
-- Frontend (aplicação):
-	- Se o `istio-ingressgateway` expuser um IP externo:
-
-```bash
-kubectl -n istio-system get svc istio-ingressgateway
-# supondo EXTERNAL-IP em GATEWAY_IP:
-curl http://<GATEWAY_IP>/
-```
-
-	- Para clusters locais (kind/minikube) ou quando não houver IP externo, use port-forward:
-
-```bash
-kubectl -n istio-system port-forward svc/istio-ingressgateway 8080:80
-# então no outro terminal:
-curl http://localhost:8080/
-```
-
-- Dashboards (Grafana / Prometheus / Jaeger):
-	- Se usou `scripts/setup-observability.sh`, os port-forwards já estarão ativos localmente:
-		- Grafana: http://localhost:3000
-		- Prometheus: http://localhost:30900
-		- Jaeger: http://localhost:16686
-
-	- Para abrir via `istioctl` (quando os addons estão instalados como parte do Istio):
-
-```bash
-istioctl dashboard prometheus
-istioctl dashboard grafana
-istioctl dashboard jaeger
-```
-
-	- Se precisar de credencial admin do Grafana (release `grafana`):
-
-```bash
-kubectl -n istio-system get secret grafana -o jsonpath="{.data.admin-password}" | base64 -d
-# usuário: admin
-```
-
-- Consultas úteis no Prometheus (exemplos):
-
-```text
-# taxa de requisições por workload
-rate(istio_requests_total[1m])
-
-# latência p95 por workload
-histogram_quantile(0.95, sum(rate(istio_request_duration_seconds_bucket[5m])) by (le, destination_workload))
-```
-
-- Ver traces no Jaeger: abra http://localhost:16686, procure por `frontend` ou `product` e visualize um trace.
-
-- Gerar tráfego de teste (útil para popular métricas/traces):
-
-```bash
-for i in {1..50}; do curl -s http://localhost:8080/ >/dev/null; done
-```
-
-- Parar port-forwards iniciados pelo script `setup-observability.sh`:
-
-```bash
-./scripts/setup-observability.sh --stop
-# ou manualmente:
-xargs -a /tmp/istio-observability-pids.txt -r kill || true
-rm -f /tmp/istio-observability-pids.txt
-```
-
-Se algum serviço (ex.: `grafana`) não estiver presente em `istio-system`, cole a saída de:
-
-```bash
-kubectl -n istio-system get pods,svc,deploy
-```
-
-que eu ajudo a corrigir.
+- [QUICKSTART.md](QUICKSTART.md) - guia completo do zero até funcionar
+- [SETUP.md](SETUP.md) - detalhes técnicos de todas as configs
+- [scripts/README.md](scripts/README.md) - docs dos scripts auxiliares
